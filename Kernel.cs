@@ -273,6 +273,11 @@ namespace LunarOS
                 Lpm.cmd(cmdsplit[1],cmdsplit);
                 v = true;
             }
+            if (cmd == "vmm")
+            {
+                VirtualMemory.cmd();
+                v = true;
+            }
             if (v)
             {
             }
@@ -450,6 +455,13 @@ namespace LunarOS
                 }
             }
             return false;
+        }
+        public static void cmd()
+        {
+            Console.WriteLine("Bank 0: {0}", aa);
+            Console.WriteLine("Bank 1: {0}", ab);
+            Console.WriteLine("Bank 2: {0}", ac);
+            Console.WriteLine("Bank 3: {0}", ad);
         }
     }
 }
