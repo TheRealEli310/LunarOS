@@ -19,11 +19,11 @@ namespace LunarOS
     public class Kernel : Sys.Kernel
     {
         public static bool video = false;
-        public byte[] vrama = new byte[4194304];
-        public byte[] vramb = new byte[4194304];
-        public byte[] vramc = new byte[4194304];
-        public byte[] vramd = new byte[4194304];
-        public string cd = String.Empty;
+        public static string cd = String.Empty;
+        private static int ppid = 0;
+        public static int rpid {
+            get { return ppid; }
+        }
         protected override void BeforeRun()
         {
             try
@@ -60,13 +60,22 @@ namespace LunarOS
                     }
                 }
                 Console.WriteLine("Starting LunarOS...");
+                ppid = 1;
+                if (!VirtualMemory.AllocateBank(3))
+                {
+                    Crash("Failed to allocate VRAM bank!");
+                }
+                Console.WriteLine("Allocated VRAM bank 3 to PID 1 (Kernel)");
                 Console.WriteLine("Initializing drivers...");
-                //Programs.Programs.drvinit();
+                Programs.Programs.drvinit();
                 Console.WriteLine("Initializing programs...");
                 Programs.Programs.boot();
+                // ill uncomment this when UPS gets implemented
+                // Console.Write("Username:");
+                // Console.ReadLine();
                 // Console.Write("Password: ");
                 // Console.ReadLine();
-                /* if (!File.Exists("s.lsf"))
+                if (!File.Exists("s.lsf"))
                 {
                     Console.WriteLine("Settings file not found. Applying default settings.");
                     using (StreamWriter sw = File.CreateText("s.lsf"))
@@ -88,7 +97,7 @@ namespace LunarOS
                         slist[i] = s;
                         i++;
                     }
-                }*/
+                }
             }
             catch (Exception e)
             {
@@ -151,6 +160,7 @@ namespace LunarOS
         }
         public static void StartCmd(String cmdline)
         {
+            ppid += 1;
             string[] cmdsplit = cmdline.Split(" ");
             var cmd = cmdsplit[0];
             var cmdargs = "";
@@ -285,6 +295,10 @@ namespace LunarOS
                     SystemErrorEvent(e.ToString());
                 }
             }
+            VirtualMemory.FreeBank(1);
+            VirtualMemory.FreeBank(2);
+            VirtualMemory.FreeBank(3);
+            ppid -= 1;
         }
         public static void Reboot()
         {
@@ -317,6 +331,125 @@ namespace LunarOS
             {
                 SystemErrorEvent(e.ToString());
             }
+        }
+    }
+    public class VirtualMemory
+    {
+        private static byte[] vrama = new byte[4194304];
+        private static byte[] vramb = new byte[4194304];
+        private static byte[] vramc = new byte[4194304];
+        private static byte[] vramd = new byte[4194304];
+        private static int aa = 0;
+        private static int ab = 0;
+        private static int ac = 0;
+        private static int ad = 0;
+        public static bool AllocateBank(int bank)
+        {
+            if (bank == 0)
+            {
+                if (aa == 0)
+                {
+                    aa = Kernel.rpid;
+                    return true;
+                }
+            }
+            if (bank == 1)
+            {
+                if (ab == 0)
+                {
+                    ab = Kernel.rpid;
+                    return true;
+                }
+            }
+            if (bank == 2)
+            {
+                if (ac == 0)
+                {
+                    ac = Kernel.rpid;
+                    return true;
+                }
+            }
+            if (bank == 3)
+            {
+                if (ad == 0)
+                {
+                    ad = Kernel.rpid;
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static bool MemWrite(int bank, int addr, byte b)
+        {
+            if (bank == 0)
+            {
+                if (aa == Kernel.rpid)
+                {
+                    vrama[addr] = b;
+                    return true;
+                }
+            }
+            if (bank == 1)
+            {
+                if (ab == Kernel.rpid)
+                {
+                    vramb[addr] = b;
+                    return true;
+                }
+            }
+            if (bank == 2)
+            {
+                if (ac == Kernel.rpid)
+                {
+                    vramc[addr] = b;
+                    return true;
+                }
+            }
+            if (bank == 3)
+            {
+                if (ad == Kernel.rpid)
+                {
+                    vramd[addr] = b;
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static bool FreeBank(int bank)
+        {
+            if (bank == 0)
+            {
+                if (aa == Kernel.rpid)
+                {
+                    aa = 0;
+                    return true;
+                }
+            }
+            if (bank == 1)
+            {
+                if (ab == Kernel.rpid)
+                {
+                    ab = 0;
+                    return true;
+                }
+            }
+            if (bank == 2)
+            {
+                if (ac == Kernel.rpid)
+                {
+                    ac = 0;
+                    return true;
+                }
+            }
+            if (bank == 3)
+            {
+                if (ad == Kernel.rpid)
+                {
+                    ad = 0;
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }
